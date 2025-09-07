@@ -7,6 +7,11 @@ class Settings(BaseSettings):
     database_name: str
     database_username: str
 
+    # JWT settings
+    secret_key: str
+    algorithm: str
+    access_token_expire_minutes: int
+
     class Config:
         env_file = ".env"
 
