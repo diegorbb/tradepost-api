@@ -13,6 +13,7 @@ A backend API for a smart item bartering platform, built with FastAPI. This proj
 - [x] Relational database schema with Users and Items
 - [x] Alembic database migrations for safe schema changes
 - [x] Pydantic schemas for data validation and serialization
+- [x] **CRUD operations for Items (Create & Read)**
 
 ---
 
