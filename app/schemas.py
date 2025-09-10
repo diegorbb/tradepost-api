@@ -10,7 +10,6 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# THIS IS THE MISSING SCHEMA
 # It defines the fields required to create a new user.
 class UserCreate(BaseModel):
     email: EmailStr
