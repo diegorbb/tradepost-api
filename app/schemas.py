@@ -2,7 +2,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import List
 
-# This schema will be used when we return a User, so it doesn't show their password
+# This schema is used for returning user data (no password)
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
@@ -10,24 +10,34 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# This is our base schema for an Item, with the fields that are common
-# to both creating and viewing an item.
+# THIS IS THE MISSING SCHEMA
+# It defines the fields required to create a new user.
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+# This is our base schema for an Item, with common fields.
 class ItemBase(BaseModel):
     title: str
     description: str | None = None
 
-# This schema is specifically for creating an Item. For now it's simple,
-# but it gives us flexibility to add more fields for creation later.
+# This schema is for creating an Item.
 class ItemCreate(ItemBase):
     pass
 
-# This is the schema for the data we will send back to the user.
-# It includes the data from ItemBase, plus the id, owner_id, and
-# the nested owner information.
+# This is the schema for data we send back to the user.
+# It includes the owner's details by nesting the UserResponse schema.
 class ItemResponse(ItemBase):
     id: int
     owner_id: int
-    owner: UserResponse
+    owner: UserResponse 
 
     class Config:
         from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    id: int | None = None
