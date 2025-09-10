@@ -1,4 +1,4 @@
-from fastapi import status, HTTPException, Depends, APIRouter
+from fastapi import status, HTTPException, Depends, APIRouter, Response
 from sqlalchemy.orm import Session
 from typing import List
 from .. import models, schemas, oauth2
@@ -26,3 +26,45 @@ def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db), current
     db.refresh(new_item)
     
     return new_item
+
+# Endpoint to delete an item
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_item(id: int, db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+    
+    item_query = db.query(models.Item).filter(models.Item.id == id)
+    item = item_query.first()
+    
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Item with id: {id} does not exist")
+    
+    # Permission Check: Does the logged-in user own this item?
+    if item.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action")
+    
+    item_query.delete(synchronize_session=False)
+    db.commit()
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# Endpoint to update an item
+@router.put("/{id}", response_model=schemas.ItemResponse)
+def update_item(id: int, updated_item: schemas.ItemCreate, db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+
+    item_query = db.query(models.Item).filter(models.Item.id == id)
+    item = item_query.first()
+
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Item with id: {id} does not exist")
+
+    # Permission Check: Does the logged-in user own this item?
+    if item.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action")
+
+    item_query.update(updated_item.model_dump(), synchronize_session=False)
+    db.commit()
+
+    return item_query.first()
