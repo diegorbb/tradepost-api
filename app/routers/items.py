@@ -1,6 +1,8 @@
+# app/routers/items.py
+
 from fastapi import status, HTTPException, Depends, APIRouter, Response
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional # <-- Import Optional
 from .. import models, schemas, oauth2
 from ..database import get_db
 
@@ -9,28 +11,38 @@ router = APIRouter(
     tags=["Items"]
 )
 
-# Endpoint to get all items
+# Get all items with Pagination and Search
 @router.get("/", response_model=List[schemas.ItemResponse])
-def get_items(db: Session = Depends(get_db)):
-    items = db.query(models.Item).all()
+def get_items(db: Session = Depends(get_db), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
+    
+    items = db.query(models.Item).filter(
+        models.Item.title.contains(search)).limit(limit).offset(skip).all()
+    
     return items
 
 # Endpoint to create a new item
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.ItemResponse)
 def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user)):
-    # Create a new item model instance, linking it to the logged-in user
     new_item = models.Item(owner_id=current_user.id, **item.model_dump())
-    
     db.add(new_item)
     db.commit()
     db.refresh(new_item)
-    
     return new_item
+
+# Get one specific item by ID
+@router.get("/{id}", response_model=schemas.ItemResponse)
+def get_item(id: int, db: Session = Depends(get_db)):
+    item = db.query(models.Item).filter(models.Item.id == id).first()
+    
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Item with id: {id} was not found")
+    
+    return item
 
 # Endpoint to delete an item
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item(id: int, db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user)):
-    
     item_query = db.query(models.Item).filter(models.Item.id == id)
     item = item_query.first()
     
@@ -38,7 +50,6 @@ def delete_item(id: int, db: Session = Depends(get_db), current_user: models.Use
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Item with id: {id} does not exist")
     
-    # Permission Check: Does the logged-in user own this item?
     if item.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Not authorized to perform requested action")
@@ -51,7 +62,6 @@ def delete_item(id: int, db: Session = Depends(get_db), current_user: models.Use
 # Endpoint to update an item
 @router.put("/{id}", response_model=schemas.ItemResponse)
 def update_item(id: int, updated_item: schemas.ItemCreate, db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user)):
-
     item_query = db.query(models.Item).filter(models.Item.id == id)
     item = item_query.first()
 
@@ -59,7 +69,6 @@ def update_item(id: int, updated_item: schemas.ItemCreate, db: Session = Depends
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Item with id: {id} does not exist")
 
-    # Permission Check: Does the logged-in user own this item?
     if item.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Not authorized to perform requested action")
