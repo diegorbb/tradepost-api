@@ -37,7 +37,7 @@ Follow these steps to get the project running locally.
 ### 1. Clone the Repository
 
 ```bash
-git clone [https://github.com/diegorbb/tradepost-api.git](https://github.com/diegorbb/tradepost-api.git)
+git clone https://github.com/diegorbb/tradepost-api.git
 cd tradepost-api
 ```
 
