@@ -1,5 +1,3 @@
-# app/routers/items.py
-
 from fastapi import status, HTTPException, Depends, APIRouter, Response
 from sqlalchemy.orm import Session
 from typing import List, Optional # <-- Import Optional
